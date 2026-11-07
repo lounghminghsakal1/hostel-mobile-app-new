@@ -1,5 +1,17 @@
 import '../../../../core/error/app_exception.dart';
 
+/// Whether students see an event. They see events that are switched on and
+/// haven't ended: live (between the start and end time) or upcoming.
+enum EventVisibility {
+  live('Live now'),
+  upcoming('Upcoming'),
+  ended('Ended'),
+  hidden('Hidden');
+
+  const EventVisibility(this.label);
+  final String label;
+}
+
 class HostelEvent {
   const HostelEvent({
     required this.id,
@@ -33,6 +45,14 @@ class HostelEvent {
   }
 
   bool get hasEnded => DateTime.now().toUtc().isAfter(endingAt);
+
+  EventVisibility visibility([DateTime? now]) {
+    if (!isActive) return EventVisibility.hidden;
+    final at = (now ?? DateTime.now()).toUtc();
+    if (!at.isBefore(endingAt)) return EventVisibility.ended;
+    if (!at.isBefore(startingAt)) return EventVisibility.live;
+    return EventVisibility.upcoming;
+  }
 }
 
 class EventDraft {

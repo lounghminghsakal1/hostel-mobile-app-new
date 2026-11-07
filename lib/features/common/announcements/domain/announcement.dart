@@ -1,4 +1,5 @@
 import '../../../../core/models/paginated.dart';
+import '../../../../core/utils/app_dates.dart';
 
 enum AnnouncementType {
   hostel('HOSTEL_ANNOUNCEMENT', 'Hostel'),
@@ -11,6 +12,22 @@ enum AnnouncementType {
 
   static AnnouncementType fromApi(Object? v) =>
       AnnouncementType.values.firstWhere((t) => t.apiValue == v, orElse: () => AnnouncementType.other);
+}
+
+/// Whether students can see an announcement right now. Same rule as the backend
+/// (`notice-visibility.utils.js`): live = switched on and today (India time)
+/// is between the start and end dates, both included.
+enum AnnouncementVisibility {
+  live('live', 'Live now'),
+  scheduled('scheduled', 'Scheduled'),
+  expired('expired', 'Expired'),
+  hidden('off', 'Hidden');
+
+  const AnnouncementVisibility(this.apiValue, this.label);
+
+  /// The backend's `visibility` filter value.
+  final String apiValue;
+  final String label;
 }
 
 class Announcement {
@@ -39,6 +56,14 @@ class Announcement {
   final AnnouncementType type;
   final bool isImportant;
   final bool pushNotification;
+
+  AnnouncementVisibility visibility([DateTime? today]) {
+    if (!isActive) return AnnouncementVisibility.hidden;
+    final day = today ?? AppDates.todayIst();
+    if (day.isBefore(startDate)) return AnnouncementVisibility.scheduled;
+    if (day.isAfter(endDate)) return AnnouncementVisibility.expired;
+    return AnnouncementVisibility.live;
+  }
 }
 
 /// What an admin fills in to create or edit an announcement.
@@ -67,8 +92,10 @@ class AnnouncementDraft {
 }
 
 /// Filters for the announcement list. A record, so it works as a provider key.
+/// Students always get live announcements only (the server enforces it);
+/// [visibility] is the admin's filter (null = all).
 typedef AnnouncementQuery = ({
-  bool? activeOnly,
+  AnnouncementVisibility? visibility,
   AnnouncementType? type,
   bool importantOnly,
   String? search,

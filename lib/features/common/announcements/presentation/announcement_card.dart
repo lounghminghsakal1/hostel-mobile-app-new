@@ -4,6 +4,26 @@ import '../../../../core/utils/app_dates.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../domain/announcement.dart';
 
+/// Whether students can see an announcement right now (admin screens).
+class AnnouncementVisibilityBadge extends StatelessWidget {
+  const AnnouncementVisibilityBadge({super.key, required this.announcement, this.small = false});
+
+  final Announcement announcement;
+  final bool small;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = announcement;
+    return switch (a.visibility()) {
+      AnnouncementVisibility.live => StatusBadge(label: 'Live now', tone: Tone.success, small: small),
+      AnnouncementVisibility.scheduled =>
+        StatusBadge(label: 'Starts ${AppDates.dayMonth(a.startDate)}', tone: Tone.primary, small: small),
+      AnnouncementVisibility.expired => StatusBadge(label: 'Expired', tone: Tone.neutral, small: small),
+      AnnouncementVisibility.hidden => StatusBadge(label: 'Hidden', tone: Tone.neutral, small: small),
+    };
+  }
+}
+
 class AnnouncementCard extends StatelessWidget {
   const AnnouncementCard({super.key, required this.announcement, required this.onTap, this.compact = false, this.showStatus = false});
 
@@ -13,7 +33,7 @@ class AnnouncementCard extends StatelessWidget {
   /// Home-screen style: icon tile and one-line preview.
   final bool compact;
 
-  /// Admin lists show Active / Inactive.
+  /// Admin lists show whether students see it: Live now / Starts … / Expired / Hidden.
   final bool showStatus;
 
   @override
@@ -35,7 +55,7 @@ class AnnouncementCard extends StatelessWidget {
         ),
         const Spacer(),
         if (showStatus)
-          StatusBadge(label: a.isActive ? 'Active' : 'Inactive', tone: a.isActive ? Tone.success : Tone.neutral, small: true)
+          AnnouncementVisibilityBadge(announcement: a, small: true)
         else
           Text('Till ${AppDates.dayMonth(a.endDate)}', style: t.caption),
       ],

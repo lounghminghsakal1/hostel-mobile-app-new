@@ -66,7 +66,7 @@ class AnnouncementRemoteDataSource {
       queryParameters: query({
         'page': q.page,
         'pageSize': AppConfig.pageSize,
-        'by_status': q.activeOnly == null ? null : (q.activeOnly! ? 'ACTIVE' : 'INACTIVE'),
+        'visibility': q.visibility?.apiValue,
         'by_announcement_type': q.type?.apiValue,
         'only_important': q.importantOnly ? 'true' : null,
         'by_announcement_title': q.search,

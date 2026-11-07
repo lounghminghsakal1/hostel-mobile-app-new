@@ -19,6 +19,7 @@ class StudentProfile {
     this.roomNumber,
     this.status = AccountStatus.unknown,
     this.activationEmailSent = true,
+    this.activationEmailError,
   });
 
   final int id;
@@ -42,6 +43,9 @@ class StudentProfile {
   /// Only meaningful right after creating a student: false when the server
   /// saved the student but couldn't send the activation email.
   final bool activationEmailSent;
+
+  /// Why the activation email failed, e.g. "Amazon SES is still in sandbox ...".
+  final String? activationEmailError;
 
   StudentProfile copyWith({String? departmentName, String? roomNumber}) => StudentProfile(
         id: id,
@@ -76,6 +80,7 @@ class StudentProfileModel extends StudentProfile {
     super.roomNumber,
     super.status,
     super.activationEmailSent,
+    super.activationEmailError,
   });
 
   factory StudentProfileModel.fromJson(Map<String, dynamic> json) {
@@ -98,6 +103,7 @@ class StudentProfileModel extends StudentProfile {
       // Not sent yet; read it as soon as the backend adds `user.status`.
       status: AccountStatus.fromApi(user?['status'] ?? json['status']),
       activationEmailSent: JsonRead.boolean(json['activationEmailSent'], true),
+      activationEmailError: JsonRead.stringOrNull(json['activationEmailError']),
     );
   }
 }

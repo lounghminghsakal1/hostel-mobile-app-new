@@ -7,6 +7,7 @@ import '../../../../core/widgets/widgets.dart';
 import '../../../common/announcements/domain/announcement.dart';
 import '../../../common/announcements/presentation/announcement_card.dart';
 import '../../../common/announcements/presentation/announcement_providers.dart';
+import '../../../common/events/domain/hostel_event.dart';
 import '../../../common/events/presentation/event_providers.dart';
 import '../../../common/events/presentation/event_widgets.dart';
 import '../../shell/admin_top_bar.dart';
@@ -22,7 +23,7 @@ class AdminNoticesScreen extends ConsumerStatefulWidget {
 
 class _AdminNoticesScreenState extends ConsumerState<AdminNoticesScreen> {
   int _tab = 0;
-  bool? _active = true;
+  AnnouncementVisibility? _visibility = AnnouncementVisibility.live;
   int _reload = 0;
 
   Future<void> _create() async {
@@ -60,20 +61,31 @@ class _AdminNoticesScreenState extends ConsumerState<AdminNoticesScreen> {
   Widget _announcements() {
     final repo = ref.read(announcementRepositoryProvider);
     return PagedList<Announcement>(
-      key: ValueKey((_active, _reload)),
+      query: (_visibility, _reload),
       bottomPadding: 96,
-      fetch: (page) => repo.list((activeOnly: _active, type: null, importantOnly: false, search: null, page: page)),
+      fetch: (page) => repo.list((visibility: _visibility, type: null, importantOnly: false, search: null, page: page)),
       header: [
-        FilterChipBar<bool?>(
-          selected: _active,
-          onSelected: (v) => setState(() => _active = v),
-          options: const [FilterOption(true, 'Active'), FilterOption(false, 'Inactive'), FilterOption(null, 'All')],
+        const InfoCallout(
+          icon: Icons.visibility_outlined,
+          title: 'Live now',
+          message: 'means students can see it: it is switched on and today is between its start and end dates. '
+              'Scheduled ones appear on their start date; expired and hidden ones are never shown.',
+        ),
+        FilterChipBar<AnnouncementVisibility?>(
+          selected: _visibility,
+          onSelected: (v) => setState(() => _visibility = v),
+          options: [
+            for (final v in AnnouncementVisibility.values) FilterOption(v, v.label),
+            const FilterOption(null, 'All'),
+          ],
         ),
       ],
-      empty: const EmptyView(
+      empty: EmptyView(
         icon: Icons.campaign_outlined,
-        title: 'No announcements',
-        message: 'Post one with the button below. Students see it on their home screen.',
+        title: _visibility == AnnouncementVisibility.live ? 'Nothing live right now' : 'No announcements',
+        message: _visibility == AnnouncementVisibility.live
+            ? 'Students see no announcements today. Post one, or check Scheduled and Expired.'
+            : 'Post one with the button below. Students see it on their home screen while it is live.',
       ),
       itemBuilder: (context, a) => AnnouncementCard(
         announcement: a,
@@ -98,7 +110,13 @@ class _AdminNoticesScreenState extends ConsumerState<AdminNoticesScreen> {
               bottomPadding: 96,
               onRefresh: () async => ref.invalidate(eventsProvider(false)),
               children: [
-                for (final e in list.reversed)
+                const InfoCallout(
+                  icon: Icons.visibility_outlined,
+                  title: 'Live now',
+                  message: 'means the event is happening: the current date and time are between its start and end. '
+                      'Students see live and upcoming events that are switched on; ended and hidden ones are not shown.',
+                ),
+                for (final e in _adminOrder(list))
                   EventCard(
                     event: e,
                     showStatus: true,
@@ -110,5 +128,21 @@ class _AdminNoticesScreenState extends ConsumerState<AdminNoticesScreen> {
               ],
             ),
     );
+  }
+
+  /// Live first, then upcoming (soonest first), then ended (most recent first).
+  /// Hidden events sit with their time group, marked Hidden.
+  static List<HostelEvent> _adminOrder(List<HostelEvent> events) {
+    int group(HostelEvent e) {
+      final now = DateTime.now().toUtc();
+      if (!now.isBefore(e.endingAt)) return 2;
+      return now.isBefore(e.startingAt) ? 1 : 0;
+    }
+
+    return [...events]..sort((a, b) {
+        final byGroup = group(a).compareTo(group(b));
+        if (byGroup != 0) return byGroup;
+        return group(a) == 2 ? b.endingAt.compareTo(a.endingAt) : a.startingAt.compareTo(b.startingAt);
+      });
   }
 }

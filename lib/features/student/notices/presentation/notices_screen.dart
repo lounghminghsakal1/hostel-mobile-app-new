@@ -36,7 +36,7 @@ class _NoticesScreenState extends ConsumerState<NoticesScreen> {
 
   Future<PageResult<Announcement>> _fetch(int page) {
     return ref.read(announcementRepositoryProvider).list((
-      activeOnly: true,
+      visibility: AnnouncementVisibility.live,
       importantOnly: _filter == _AnnouncementFilter.important,
       type: switch (_filter) {
         _AnnouncementFilter.hostel => AnnouncementType.hostel,

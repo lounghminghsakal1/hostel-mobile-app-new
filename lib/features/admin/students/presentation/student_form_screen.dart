@@ -468,7 +468,9 @@ class _Success extends StatelessWidget {
                   tone: Tone.warning,
                   icon: Icons.warning_amber_rounded,
                   title: "Activation email wasn't sent",
-                  message: "The student is saved, but the email to ${student.email ?? 'them'} failed. Open their profile and tap Resend to try again.",
+                  message: "The student is saved, but the email to ${student.email ?? 'them'} failed"
+                      "${student.activationEmailError == null ? '' : ': ${student.activationEmailError}'}. "
+                      'Once that is fixed, open their profile and tap Resend.',
                 )
               else
                 Text.rich(

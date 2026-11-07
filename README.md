@@ -164,16 +164,33 @@ How the app handles it:
 
 ## Email links
 
-Activation and reset emails link to `ourhostel://setup-password?token=…&mode=welcome|reset`.
-Android (`AndroidManifest.xml`) and iOS (`Info.plist`) register the `ourhostel` scheme, and the
-router sends the link to the Set password screen. Test it on an Android emulator with:
+Activation and reset emails link to an https page on the backend:
+`https://api.ourhostel.in/open/setup-password?token=…&mode=welcome|reset` (the host is `BASE_URL`).
+Gmail and most mail apps don't make custom `ourhostel://` links tappable, so the email never uses them directly.
+
+- **Android with App Links set up:** the link opens the app straight on the Set password screen. The
+  backend serves `/.well-known/assetlinks.json` once `ANDROID_APP_SHA256_FINGERPRINTS` is set (see below),
+  and `AndroidManifest.xml` has the matching `autoVerify` intent filter for `api.ourhostel.in`.
+- **Otherwise** (App Links not set up yet, iOS, another host): the link opens a small branded page that opens
+  the app (`intent://` on Android, `ourhostel://` elsewhere), with an "Open the Our Hostel app" button.
+
+Get the fingerprint of the key that signs the app (debug key shown; use your release keystore, or Play
+Console > App integrity, for release builds), then set it on the server as
+`ANDROID_APP_SHA256_FINGERPRINTS=AA:BB:...` (comma-separate several):
+
+```bash
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+```
+
+Test on an Android emulator or phone:
+
+```bash
+adb shell am start -a android.intent.action.VIEW -d "https://api.ourhostel.in/open/setup-password?token=test&mode=welcome"
+```
 
 ```bash
 adb shell am start -a android.intent.action.VIEW -d "ourhostel://setup-password?token=test&mode=welcome"
 ```
-
-Some email apps don't make custom-scheme links tappable. See section 5 of
-[docs/API_GAPS.md](docs/API_GAPS.md) for switching to https App Links.
 
 ## Backend gaps
 

@@ -16,11 +16,34 @@ import '../domain/student_home.dart';
 import 'student_home_providers.dart';
 import 'widgets/attendance_card.dart';
 
-class StudentHomeScreen extends ConsumerWidget {
+class StudentHomeScreen extends ConsumerStatefulWidget {
   const StudentHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StudentHomeScreen> createState() => _StudentHomeScreenState();
+}
+
+class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
+  /// Home stays in memory behind the other tabs, so reload it when the app
+  /// comes back to the foreground: new notices, the attendance window opening.
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onResume: () => ref.invalidate(studentHomeProvider),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle; // start listening
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final home = ref.watch(studentHomeProvider);
     final profile = ref.watch(myProfileProvider).value;
     final t = context.text;

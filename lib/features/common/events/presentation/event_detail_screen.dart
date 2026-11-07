@@ -93,6 +93,7 @@ class _Body extends StatelessWidget {
                     if (e.isOngoing) const StatusBadge(label: 'Happening now', tone: Tone.success),
                     if (!e.isOngoing && relative != null) StatusBadge(label: relative, tone: Tone.accent),
                     if (!e.isActive) const StatusBadge(label: 'Hidden from students', tone: Tone.neutral),
+                    if (e.isActive && e.hasEnded) const StatusBadge(label: 'Ended', tone: Tone.neutral),
                   ]),
                   const SizedBox(height: 10),
                   Text(e.name, style: t.display.copyWith(fontSize: 28)),

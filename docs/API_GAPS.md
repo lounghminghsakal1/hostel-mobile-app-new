@@ -49,6 +49,20 @@ uncommitted edits listed in section 1. When an endpoint is missing, the data-sou
 | App | The student form uploads and checks the photo as soon as it's picked. It shows "Photo looks good", tips (warnings) or "This photo can't be used" with the reasons and a Retake button, and won't save a rejected photo. |
 | Face server accuracy | Sideways/upside-down photos are turned upright (they used to score a genuine match at ~0%). Selfies far too dark, blurry, small or turned away get a retake (`LOW_QUALITY_CAPTURE`, 422) instead of a misleading score. 100% now needs cosine 0.80 (was 0.70), so good matches spread over 75–95% instead of many showing 100%. |
 
+### Announcements and events students see (7 Nov)
+
+One rule, in `src/utils/notice-visibility.utils.js`, used by the student splash, the student lists and the detail endpoints:
+
+| | Students see it when | Admin labels |
+| --- | --- | --- |
+| Announcement | Switched on (`ACTIVE`) **and today (IST) is between `startDate` and `endDate`**, both days included | Live now · Starts 12 Nov (scheduled) · Expired · Hidden |
+| Event | Switched on (`isActive`) **and it hasn't ended** (`endingAt` in the future): happening now or upcoming | Live now (between start and end time) · Upcoming · Ended · Hidden |
+
+- Before, the student notices list showed every `ACTIVE` announcement whatever its dates, while the home screen showed only today's. Both now give the same result.
+- `GET /announcements` for students always returns live ones only, important first. Admins can filter with `visibility=live|scheduled|expired|off`. `GET /announcements/:id` gives students 404 unless it's live.
+- `GET /upcoming_events` for students returns visible events, soonest first; `GET /upcoming_events/:id` gives students 404 for hidden or ended events. Both lists now have a stable order.
+- App: the student home reloads when the app comes back to the foreground and when the Home tab is opened again. It used to keep showing what it loaded at sign-in.
+
 Distance: `calculateDistanceFromHostelInMeters` (haversine) is correct. It matches reference distances (Bengaluru–Chennai 290.2 km). It's the straight-line distance, so it's shorter than the road distance Google Maps shows.
 
 ### New behaviour
@@ -139,17 +153,19 @@ The announcement form saves `pushNotification`, but nothing is sent yet.
 
 ## 5. Email links into the app
 
-The emails link to `ourhostel://setup-password?token=…&mode=welcome|reset`. The app registers the
-`ourhostel` scheme on Android and iOS and opens the Set password screen.
+Done (7 Nov): emails link to `https://<BASE_URL>/open/setup-password?token=…&mode=welcome|reset`.
 
-Some email apps (Gmail web, for example) don't make custom-scheme links tappable. For production,
-switch to https links:
+- `GET /open/setup-password` (backend, public) is a branded page that opens the app: `intent://…;package=in.ourhostel.our_hostel` on Android (back to the page with an "install the app" note if it isn't installed), `ourhostel://setup-password?…` elsewhere, plus an "Open the Our Hostel app" button. It validates the token format, sends `no-store` and `no-referrer`, and echoes nothing unescaped.
+- `GET /.well-known/assetlinks.json` lists `ANDROID_APP_SHA256_FINGERPRINTS`. The app's manifest has an `autoVerify` intent filter for `https://api.ourhostel.in/open/setup-password`, so once the fingerprint is set, Android opens the link straight in the app.
+- Link lifetime: activation **48 hours** (was 5 minutes, which expired before most students opened the email), password reset **30 minutes**. Both are single use.
+- iOS Universal Links still need an `apple-app-site-association` file and the Associated Domains capability (Apple Team ID). Until then iOS uses the page's button.
 
-1. Use an https link in the emails, for example `https://ourhostel.in/setup-password?token=…&mode=welcome`.
-   The router already accepts the `/setup-password` path.
-2. Android App Links:
-   - Host `/.well-known/assetlinks.json` (package `in.ourhostel.our_hostel`).
-   - Add an `intent-filter` with `android:autoVerify="true"` for that host to `AndroidManifest.xml`.
-3. iOS Universal Links:
-   - Host `apple-app-site-association` (bundle `in.ourhostel.ourHostel`).
-   - Add Associated Domains (`applinks:ourhostel.in`).
+## 6. Sending email (Amazon SES)
+
+**Why emails weren't sent:** the SES account in `ap-southeast-2` is still in the **sandbox** (200 emails/day, 1/second). In the sandbox SES only delivers to addresses verified one by one, so every new student's address was rejected. The sender domain `ourhostel.in` is verified, with DKIM.
+
+**Fix (AWS console, not code):** SES > Account dashboard > **Request production access** (use case: transactional account emails to students). Until it's approved, verify the test addresses you need under SES > Identities.
+
+Code changes:
+- Emails come from `Our Hostel <no-reply@ourhostel.in>` (`AWS_SES_FROM_NAME` overrides the name) and use new branded HTML and plain-text templates (`src/services/email-templates.js`).
+- A failed email now says why: "Resend activation link" answers `502` with, for example, "Couldn't send the activation email: Amazon SES is still in sandbox (test) mode…". Creating a student returns `activationEmailError`, which the app shows. The app now shows the server's message for 5xx errors that have one.

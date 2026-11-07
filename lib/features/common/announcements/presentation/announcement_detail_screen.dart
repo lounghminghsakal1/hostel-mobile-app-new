@@ -5,6 +5,7 @@ import '../../../../core/utils/app_dates.dart';
 import '../../../../core/utils/launcher.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../domain/announcement.dart';
+import 'announcement_card.dart';
 import 'announcement_providers.dart';
 
 /// Shared by students and admins. Admins get an edit button via [onEdit].
@@ -76,7 +77,8 @@ class _Body extends StatelessWidget {
           children: [
             if (a.isImportant) const StatusBadge(label: 'Important', tone: Tone.accent, showDot: false),
             StatusBadge(label: '${a.type.label} announcement', tone: Tone.primary, showDot: false),
-            if (!a.isActive) const StatusBadge(label: 'Inactive', tone: Tone.neutral),
+            // Students only ever see live ones; admins see why others are not shown
+            if (a.visibility() != AnnouncementVisibility.live) AnnouncementVisibilityBadge(announcement: a),
           ],
         ),
         const SizedBox(height: 16),

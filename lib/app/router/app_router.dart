@@ -74,6 +74,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       // Same link with the path form (`/setup-password?token=...`).
       GoRoute(path: '/setup-password', redirect: (_, state) => setPasswordDeepLinkTarget(state.uri) ?? Routes.setPassword),
+      // https email link opened straight in the app (Android App Links)
+      GoRoute(path: '/open/setup-password', redirect: (_, state) => setPasswordDeepLinkTarget(state.uri) ?? Routes.setPassword),
 
       // ── Student ──
       StatefulShellRoute.indexedStack(

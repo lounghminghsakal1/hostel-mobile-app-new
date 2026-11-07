@@ -100,7 +100,7 @@ class _FormState extends ConsumerState<_Form> {
         await repo.create(draft);
       }
       if (!mounted) return;
-      context.showMessage(_editing ? 'Announcement updated.' : (active ? 'Announcement published.' : 'Saved as inactive.'));
+      context.showMessage(_editing ? 'Announcement updated.' : (active ? 'Announcement saved. Students see it between its start and end dates.' : 'Saved as hidden.'));
       context.pop(true);
     } on Object catch (e) {
       if (mounted) context.showError(e);
@@ -145,7 +145,7 @@ class _FormState extends ConsumerState<_Form> {
         children: _editing
             ? [AppButton(label: 'Save changes', loading: _saving, onPressed: () => _save(active: _active))]
             : [
-                AppButton(label: 'Save as inactive', variant: ButtonVariant.outline, onPressed: _saving ? null : () => _save(active: false)),
+                AppButton(label: 'Save as hidden', variant: ButtonVariant.outline, onPressed: _saving ? null : () => _save(active: false)),
                 AppButton(label: 'Publish', loading: _saving, onPressed: () => _save(active: true)),
               ],
       ),
@@ -193,7 +193,7 @@ class _FormState extends ConsumerState<_Form> {
             GroupedCard(children: [
               toggle('Mark as important', 'Pinned to the top with a coral tag', _important, (v) => setState(() => _important = v)),
               toggle('Push notification', "Saved now; phones get alerts once notifications go live", _push, (v) => setState(() => _push = v)),
-              if (_editing) toggle('Active', 'Turn off to hide it from students', _active, (v) => setState(() => _active = v)),
+              if (_editing) toggle('Show to students', 'Shown only between the start and end dates. Turn off to hide it.', _active, (v) => setState(() => _active = v)),
             ]),
           ],
         ),

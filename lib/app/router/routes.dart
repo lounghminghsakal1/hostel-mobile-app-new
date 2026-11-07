@@ -46,11 +46,13 @@ abstract final class Routes {
   static const adminChangePassword = '/admin/change-password';
 }
 
-/// The backend emails `ourhostel://setup-password?token=...&mode=welcome|reset`.
-/// Returns the in-app location for such a link (host or path form), or null
-/// when [uri] isn't one.
+/// Links into the Set password screen. Emails link to
+/// `https://<backend>/open/setup-password?token=...&mode=welcome|reset`, which
+/// opens the app either directly (Android App Links) or through that page's
+/// `ourhostel://setup-password?...` button. Returns the in-app location, or
+/// null when [uri] isn't one of these links.
 String? setPasswordDeepLinkTarget(Uri uri) {
-  final isLink = uri.host == 'setup-password' || uri.path == '/setup-password';
+  final isLink = uri.host == 'setup-password' || uri.path == '/setup-password' || uri.path == '/open/setup-password';
   if (!isLink) return null;
   final token = uri.queryParameters['token'];
   final mode = uri.queryParameters['mode'] == 'reset' ? 'reset' : 'welcome';

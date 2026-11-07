@@ -43,6 +43,22 @@ class EventCover extends StatelessWidget {
   }
 }
 
+/// Whether students see an event (admin screens): Live now / Upcoming / Ended / Hidden.
+class EventVisibilityBadge extends StatelessWidget {
+  const EventVisibilityBadge({super.key, required this.event, this.small = false});
+
+  final HostelEvent event;
+  final bool small;
+
+  @override
+  Widget build(BuildContext context) => switch (event.visibility()) {
+        EventVisibility.live => StatusBadge(label: 'Live now', tone: Tone.success, small: small),
+        EventVisibility.upcoming => StatusBadge(label: 'Upcoming', tone: Tone.primary, small: small),
+        EventVisibility.ended => StatusBadge(label: 'Ended', tone: Tone.neutral, small: small),
+        EventVisibility.hidden => StatusBadge(label: 'Hidden', tone: Tone.neutral, small: small),
+      };
+}
+
 class EventCard extends StatelessWidget {
   const EventCard({super.key, required this.event, required this.onTap, this.width, this.coverHeight = 128, this.showStatus = false});
 
@@ -57,8 +73,8 @@ class EventCard extends StatelessWidget {
     final t = context.text;
     final p = context.colors;
     Widget? badge;
-    if (showStatus && !event.isActive) {
-      badge = const StatusBadge(label: 'Hidden', tone: Tone.neutral);
+    if (showStatus && event.visibility() != EventVisibility.live) {
+      badge = EventVisibilityBadge(event: event);
     } else if (event.isOngoing) {
       badge = Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

@@ -57,7 +57,10 @@ AppException mapDioException(DioException e) {
     }
   }
 
-  if (status != null && status >= 500) {
+  // The backend replaces unexpected 500s with a generic message itself, so a
+  // 5xx message from it is meant for the user (e.g. "Couldn't send the
+  // activation email: ..."). Proxies' error pages have no JSON message.
+  if (status != null && status >= 500 && message == null) {
     message = 'Something went wrong on our side. Please try again in a moment.';
   } else if (status == 404 && message == null) {
     message = "We couldn't find that.";
